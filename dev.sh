@@ -9,7 +9,7 @@ setup() {
     echo "Installing necessary dependencies"
     pip install -r requirements.txt
     read -p "Please enter the project name (no spaces, leave empty to not create folder): " PROJECT_NAME
-    if [ $PROJECT_NAME != "" ] 
+    if [ $PROJECT_NAME != "" ]
     then
         mkdir $PROJECT_NAME
         touch ./$PROJECT_NAME/__init__.py
@@ -27,6 +27,12 @@ clean() {
     echo "Doing some vacuuming... *whoosh whoosh*"
     rm -rf ./$VENV
     echo "Project cleaned"
+}
+
+setrequirements() {
+    echo "Setting requirements"
+    python -m pip freeze > requirements.txt
+    echo "Requirements set"
 }
 
 "$@"
