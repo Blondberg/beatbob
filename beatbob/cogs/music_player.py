@@ -86,7 +86,8 @@ class MusicPlayer(commands.Cog, name="Music Player"):
 
         async with ctx.typing():
             player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-            ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+            voice = get(self.bot.voice_clients, guild=ctx.guild)
+            voice.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
 
         await ctx.send(f'Now playing: {player.title}')
 
