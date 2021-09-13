@@ -4,6 +4,8 @@ from discord.ext.commands.errors import CommandRegistrationError
 from discord.utils import get
 import youtube_dl
 import asyncio
+import helpers.checkers as checkers
+from helpers.messages import Message
 
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -59,44 +61,53 @@ class MusicPlayer(commands.Cog, name="Music Player"):
     @commands.command(name='join', description='You want Beatbob in your life')
     async def join(self, ctx: commands.Context):
         if not ctx.author.voice:
-            await ctx.send("You are not in a voice channel... idiot...")
+            await ctx.send(Message.USER_NOT_IN_CHANNEL.value)
             return
         channel = ctx.author.voice.channel
 
         await channel.connect()
-        await ctx.guild.change_voice_state(channel=channel, self_mute=False, self_deaf=True)
-
-
-    # @commands.command(name='play', description='Play the song of your choice!')
-    # async def play(self, ctx: commands.Context, link='https://www.youtube.com/watch?v=nQOvMqePwMg'):
-
-    #     song_info = ytdl.extract_info(link, download=False)
-    #     voice = get(self.bot.voice_clients, guild=ctx.guild)
-
-    #     if not link: # check if there is a link
-    #         self.join(self, ctx)
-    #         return
-
-    #     await ctx.send(song_info)
 
 
     @commands.command()
     async def play(self, ctx: commands.Context, *, url):
-        """Streams from a url (same as yt, but doesn't predownload)"""
+        # TODO join channel if not in one
+        voice_client = ctx.message.guild.voice_client
+        if voice_client.is_paused():
+            self.resume(ctx)
+            return
+
+        if voice_client.is_playing():
+            # TODO add to queue
+            return
 
         async with ctx.typing():
             player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-            voice = get(self.bot.voice_clients, guild=ctx.guild)
-            voice.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
 
         await ctx.send(f'Now playing: {player.title}')
 
 
-
-
     @commands.command(name='leave', description='You no longer need Beatbob in your life')
     async def leave(self, ctx: commands.Context):
-        await ctx.voice_client.disconnect()
+        # TODO remove current queue
+        if checkers.is_connected(ctx):
+            await ctx.voice_client.disconnect()
+            return
+        await ctx.send(Message.NOT_IN_CHANNEL.value)
+
+
+    @commands.command(name='pause', description="Pause the current song.")
+    async def pause(self, ctx: commands.Context):
+        voice_client = ctx.message.guild.voice_client
+        if voice_client.is_playing():
+            await voice_client.pause()
+
+        else:
+            await ctx.send("I am not playing anything currently...")
+
+    @commands.command(name="resume", description="Resume a paused song")
+    async def resume(self, ctx: commands.Context):
+        return True
 
 
 def setup(bot: commands.Bot):
