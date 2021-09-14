@@ -6,6 +6,9 @@ import youtube_dl
 import asyncio
 import helpers.checkers as checkers
 from helpers.messages import Message
+from helpers.songlist import SongList
+
+import json
 
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -34,60 +37,70 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.data = data
 
         self.title = data.get('title')
-        self.url = data.get('url')
+        self.url = data.get('url') # a specific URL needed for discord to play the music
 
     @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+    async def from_url(cls, url, *, loop=None):
+        loop = loop
+        data = ytdl.extract_info(url, download=False) # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
 
+        # TODO This is redundant and for debug purposes only!
+        with open('output.json', 'w') as f:
+            f.write(json.dumps(data))
+
+        # TODO handle if it is a playlist, currently just takes the first song
         if 'entries' in data:
             # take first item from a playlist
             data = data['entries'][0]
 
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+        return cls(discord.FFmpegPCMAudio(data['url'], **ffmpeg_options), data=data)
 
 
 class MusicPlayer(commands.Cog, name="Music Player"):
     def __init__(self, bot) -> None:
         super().__init__()
         self.bot = bot
-
-        # queue is a directory that keeps track of the tracks
-        self.queue = {}
+        self.songlist = SongList()
 
 
     @commands.command(name='join', description='You want Beatbob in your life')
     async def join(self, ctx: commands.Context):
         if not ctx.author.voice:
             await ctx.send(Message.USER_NOT_IN_CHANNEL.value)
-            return
+            return False
         channel = ctx.author.voice.channel
 
         await channel.connect()
 
+        return True
 
-    @commands.command()
+
+    @commands.command(name="play", aliases=['p'], description="Plays the song from url or adds it to the queue")
     async def play(self, ctx: commands.Context, *, url):
-        # TODO join channel if not in one
         voice_client = ctx.message.guild.voice_client
+
+        # Try to join channel if not connected
+        if not voice_client or not voice_client.is_connected():
+            if not self.join(ctx): # if join failed, don't continue
+                return False
+
         if voice_client.is_paused():
             self.resume(ctx)
             return
 
-        if voice_client.is_playing():
-            # TODO add to queue
-            return
-
         async with ctx.typing():
-            player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+            player = await YTDLSource.from_url(url, loop=self.bot.loop)
+            self.songlist.add(player)
 
+            if voice_client.is_playing():
+                # TODO add to queue
+                self.bot.loop.create_task()
+            print("Current songlist: ", self.songlist)
+            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
         await ctx.send(f'Now playing: {player.title}')
 
 
-    @commands.command(name='leave', description='You no longer need Beatbob in your life')
+    @commands.command(name='leave', aliases=['l'], description='You no longer need Beatbob in your life')
     async def leave(self, ctx: commands.Context):
         # TODO remove current queue
         if checkers.is_connected(ctx):
@@ -100,14 +113,23 @@ class MusicPlayer(commands.Cog, name="Music Player"):
     async def pause(self, ctx: commands.Context):
         voice_client = ctx.message.guild.voice_client
         if voice_client.is_playing():
-            await voice_client.pause()
+            voice_client.pause()
 
         else:
-            await ctx.send("I am not playing anything currently...")
+            await ctx.send(Message.NOT_PLAYING.value)
 
-    @commands.command(name="resume", description="Resume a paused song")
+
+    @commands.command(name="queue", description="Display the current song queue")
+    async def queue(self, ctx: commands.Context):
+        await ctx.send("The current queue is: ")
+
+
+
+    @commands.command(name="resume", aliases=['r'], description="Resume a paused song")
     async def resume(self, ctx: commands.Context):
-        return True
+        voice_client = ctx.message.guild.voice_client
+        if voice_client.is_paused():
+            voice_client.play()
 
 
 def setup(bot: commands.Bot):
