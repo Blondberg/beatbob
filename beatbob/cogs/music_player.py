@@ -31,29 +31,31 @@ ffmpeg_options = {
 }
 
 class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
+    def __init__(self, source, *, meta_data, volume=0.5):
         super().__init__(source, volume)
 
-        self.data = data
+        self.meta_data = meta_data
 
-        self.title = data.get('title')
-        self.url = data.get('url') # a specific URL needed for discord to play the music
+        self.title = meta_data.get('title')
+        self.url = meta_data.get('url') # a specific URL needed for discord to play the music
+        self.duration = meta_data.get('duration')
+        print(self.duration)
 
     @classmethod
     async def from_url(cls, url, *, loop=None):
         loop = loop
-        data = ytdl.extract_info(url, download=False) # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
+        meta_data = ytdl.extract_info(url, download=False) # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
 
         # TODO This is redundant and for debug purposes only!
         with open('output.json', 'w') as f:
-            f.write(json.dumps(data))
+            f.write(json.dumps(meta_data))
 
         # TODO handle if it is a playlist, currently just takes the first song
-        if 'entries' in data:
+        if 'entries' in meta_data:
             # take first item from a playlist
-            data = data['entries'][0]
+            meta_data = meta_data['entries'][0]
 
-        return cls(discord.FFmpegPCMAudio(data['url'], **ffmpeg_options), data=data)
+        return cls(discord.FFmpegPCMAudio(meta_data['url'], **ffmpeg_options), meta_data=meta_data)
 
 
 class MusicPlayer(commands.Cog, name="Music Player"):
@@ -96,16 +98,22 @@ class MusicPlayer(commands.Cog, name="Music Player"):
                 # TODO add to queue
                 self.bot.loop.create_task()
             print("Current songlist: ", self.songlist)
-            voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+            voice_client.play(player)
         await ctx.send(f'Now playing: {player.title}')
 
 
     @commands.command(name='leave', aliases=['l'], description='You no longer need Beatbob in your life')
     async def leave(self, ctx: commands.Context):
         # TODO remove current queue
-        if checkers.is_connected(ctx):
-            await ctx.voice_client.disconnect()
-            return
+        try:
+            voice_client = ctx.message.author.guild.voice_client
+            if voice_client or not voice_client.is_connected() :
+                await ctx.voice_client.disconnect()
+                return
+        except AttributeError as e:
+            print(e)
+            print("Tried to leave channel when not connected")
+
         await ctx.send(Message.NOT_IN_CHANNEL.value)
 
 
