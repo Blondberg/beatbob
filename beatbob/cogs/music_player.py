@@ -1,4 +1,5 @@
 import discord
+from discord.errors import ClientException
 from discord.ext import commands
 from discord.ext.commands.errors import CommandRegistrationError
 from discord.utils import get
@@ -37,18 +38,19 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.meta_data = meta_data
 
         self.title = meta_data.get('title')
-        self.url = meta_data.get('url') # a specific URL needed for discord to play the music
+         # a specific URL needed for discord to play the music
+        self.url = meta_data.get('url')
         self.duration = meta_data.get('duration')
-        print(self.duration)
 
     @classmethod
     async def from_url(cls, url, *, loop=None):
-        loop = loop
-        meta_data = ytdl.extract_info(url, download=False) # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
 
-        # TODO This is redundant and for debug purposes only!
-        with open('output.json', 'w') as f:
-            f.write(json.dumps(meta_data))
+        # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
+        meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+
+        # # TODO This is redundant and for debug purposes only!
+        # with open('output.json', 'w') as f:
+        #     f.write(json.dumps(meta_data))
 
         # TODO handle if it is a playlist, currently just takes the first song
         if 'entries' in meta_data:
@@ -64,27 +66,41 @@ class MusicPlayer(commands.Cog, name="Music Player"):
         self.bot = bot
         self.songlist = SongList()
 
+        # used to tell the player loop when the next song can be loaded
+        self.next = asyncio.Event()
+        self.queue = asyncio.Queue()
 
-    @commands.command(name='join', description='You want Beatbob in your life')
-    async def join(self, ctx: commands.Context):
-        if not ctx.author.voice:
-            await ctx.send(Message.USER_NOT_IN_CHANNEL.value)
-            return False
-        channel = ctx.author.voice.channel
+        self.loop_created = False
 
-        await channel.connect()
 
-        return True
+    async def player_loop(self, ctx):
+        await self.bot.wait_until_ready()
+
+        voice_client = ctx.guild.voice_client
+
+        self.loop_created = True
+
+        while not self.bot.is_closed():
+            self.next.clear()
+
+            # remove and return an item from the queue. Wait for available item if empty
+            source = await self.queue.get()
+
+            # play a song and set Event flag to true when done
+            voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
+
+            # Wait for the previous song to finish
+            await self.next.wait()
+
+        # TODO clear everything if the bot is closed
 
 
     @commands.command(name="play", aliases=['p'], description="Plays the song from url or adds it to the queue")
     async def play(self, ctx: commands.Context, *, url):
         voice_client = ctx.message.guild.voice_client
 
-        # Try to join channel if not connected
-        if not voice_client or not voice_client.is_connected():
-            if not self.join(ctx): # if join failed, don't continue
-                return False
+        if not self.loop_created:
+            self.bot.loop.create_task(self.player_loop(ctx))
 
         if voice_client.is_paused():
             self.resume(ctx)
@@ -92,14 +108,23 @@ class MusicPlayer(commands.Cog, name="Music Player"):
 
         async with ctx.typing():
             player = await YTDLSource.from_url(url, loop=self.bot.loop)
-            self.songlist.add(player)
 
-            if voice_client.is_playing():
-                # TODO add to queue
-                self.bot.loop.create_task()
-            print("Current songlist: ", self.songlist)
-            voice_client.play(player)
-        await ctx.send(f'Now playing: {player.title}')
+            await self.queue.put(player)
+
+
+    @commands.command(name='join', description='You want Beatbob in your life')
+    async def join(self, ctx: commands.Context):
+        if not ctx.author.voice:
+            await ctx.send(Message.USER_NOT_IN_CHANNEL.value)
+            return False
+
+        try:
+            channel = ctx.author.voice.channel
+
+            await channel.connect()
+        except ClientException as e:
+            print("Can't join a channel when already connected to it")
+            return True
 
 
     @commands.command(name='leave', aliases=['l'], description='You no longer need Beatbob in your life')
@@ -109,12 +134,15 @@ class MusicPlayer(commands.Cog, name="Music Player"):
             voice_client = ctx.message.author.guild.voice_client
             if voice_client or not voice_client.is_connected() :
                 await ctx.voice_client.disconnect()
+                self.bot.loop.clear()
+                self.songlist.clear()
                 return
         except AttributeError as e:
             print(e)
             print("Tried to leave channel when not connected")
 
         await ctx.send(Message.NOT_IN_CHANNEL.value)
+
 
 
     @commands.command(name='pause', description="Pause the current song.")
@@ -125,12 +153,6 @@ class MusicPlayer(commands.Cog, name="Music Player"):
 
         else:
             await ctx.send(Message.NOT_PLAYING.value)
-
-
-    @commands.command(name="queue", description="Display the current song queue")
-    async def queue(self, ctx: commands.Context):
-        await ctx.send("The current queue is: ")
-
 
 
     @commands.command(name="resume", aliases=['r'], description="Resume a paused song")
