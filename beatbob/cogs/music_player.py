@@ -65,6 +65,7 @@ class MusicPlayer(commands.Cog, name="Music Player"):
         super().__init__()
         self.bot = bot
         self.songlist = SongList()
+        self.players = {} # a list of all the players
 
         # used to tell the player loop when the next song can be loaded
         self.next = asyncio.Event()
