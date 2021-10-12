@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-class CommonCog(commands.Cog, name = "Common Commands"):
+class Misc(commands.Cog, name = "Common Commands"):
     def __init__(self, bot) -> None:
         super().__init__()
         self.bot = bot
@@ -13,4 +13,4 @@ class CommonCog(commands.Cog, name = "Common Commands"):
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(CommonCog(bot))
+    bot.add_cog(Misc(bot))
