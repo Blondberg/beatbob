@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from apis.spotify_api import SpotifyApi
 import cogs.music.player_handler
 import cogs.misc
+from datetime import datetime
 
 load_dotenv()
 
@@ -30,7 +31,9 @@ async def on_message(message):
     Args:
         message (ctx): meta data for a sent message aimed towards the bot
     """
-    print("{0}: {1}".format(message.author, message.content))
+
+    now = datetime.now()
+    print("{} [{}]: {}".format(message.author, now.strftime("%d/%m/%y %H:%M:%S"), message.content))
     await bot.process_commands(message)
 
 

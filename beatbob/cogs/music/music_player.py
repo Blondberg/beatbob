@@ -39,19 +39,36 @@ class MusicPlayer:
         # TODO clear everything if the bot is closed
 
 
-    async def resume():
+    async def pause(self, ctx):
+        voice_client = ctx.message.guild.voice_client
+
+        if not voice_client or not voice_client.is_connected():
+            await ctx.send("I am not connected to a channel...")
+            return
+        if voice_client.is_playing():
+            voice_client.pause()
+
+        else:
+            await ctx.send("Can't pause music if I'm not playing")
+
+
+    async def resume(self, ctx):
+        voice_client = ctx.message.guild.voice_client
+        if voice_client.is_paused():
+            voice_client.play()
         return
+
 
     async def play(self, ctx, url):
         voice_client = ctx.message.guild.voice_client
 
         if not voice_client or not voice_client.is_connected():
             await ctx.send("I am not connected to a voice channel! Try -join.")
-            return False
+            return
 
         if not url:
             await ctx.send("You need to give me an url so I know what to play...")
-            return False
+            return
 
         if not self.loop_created:
             self.bot.loop.create_task(self.player_loop(ctx))
@@ -66,10 +83,11 @@ class MusicPlayer:
             await self.queue.put(player)
         return
 
+
     async def join(self, ctx):
         if not ctx.author.voice:
             await ctx.send("You are currently not in a joinable channel")
-            return False
+            return
 
         try:
             channel = ctx.author.voice.channel
@@ -77,7 +95,29 @@ class MusicPlayer:
             await channel.connect()
         except ClientException as e:
             print("Can't join a channel when already connected to it")
-            return True
+            return
+
+
+    async def leave(self, ctx):
+        try:
+            voice_client = ctx.message.author.guild.voice_client
+            if voice_client or not voice_client.is_connected() :
+                await ctx.voice_client.disconnect()
+                self.bot.loop.clear()
+                self.songlist.clear()
+                return
+        except AttributeError as e:
+            print(e)
+            print("Tried to leave channel when not connected")
+
+        await ctx.send("I am not in a channel, so I can't leave.")
+
+
+    async def skip(self, ctx):
+        ctx.message.guild.voice_client.stop()
+        if self.queue.empty():
+            await ctx.send("There are no more songs in the queue!")
+
 
     async def clear():
         return
