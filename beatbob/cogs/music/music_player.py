@@ -123,6 +123,7 @@ class MusicPlayer:
         return
 
     async def queue():
+
         return
 
     async def loop():
