@@ -1,5 +1,7 @@
 import youtube_dl
 import discord
+import json
+from discord.ext.commands.errors import CommandInvokeError
 
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -35,17 +37,21 @@ class YTDLSource(discord.PCMVolumeTransformer):
     @classmethod
     async def from_url(cls, url, *, loop=None):
 
-        # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
-        meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
-
-        # # TODO This is redundant and for debug purposes only!
-        # with open('output.json', 'w') as f:
-        #     f.write(json.dumps(meta_data))
+        try:
+            # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
+            meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{url}", download=False))
+        except CommandInvokeError:
+            print("The youtube search is not valid")
+        # # TODO This is redundant asnd for debug purposes only!
+        with open('output.json', 'w') as f:
+            f.write(json.dumps(meta_data))
 
         # TODO handle if it is a playlist, currently just takes the first song
         if 'entries' in meta_data:
             # take first item from a playlist
             meta_data = meta_data['entries'][0]
+
+        print(meta_data)
 
         return cls(discord.FFmpegPCMAudio(meta_data['url'], **ffmpeg_options), meta_data=meta_data)
 
