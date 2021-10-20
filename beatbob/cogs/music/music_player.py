@@ -35,6 +35,7 @@ class MusicPlayer:
 
             # Wait for the previous song to finish
             await self.next.wait()
+            print("Finished playing song: {}".format(source.title))
 
         # TODO clear everything if the bot is closed
 
