@@ -43,15 +43,13 @@ class YTDLSource(discord.PCMVolumeTransformer):
         except CommandInvokeError:
             print("The youtube search is not valid")
         # # TODO This is redundant asnd for debug purposes only!
-        with open('output.json', 'w') as f:
-            f.write(json.dumps(meta_data))
+        # with open('output.json', 'w') as f:
+        #     f.write(json.dumps(meta_data))
 
         # TODO handle if it is a playlist, currently just takes the first song
         if 'entries' in meta_data:
             # take first item from a playlist
             meta_data = meta_data['entries'][0]
-
-        print(meta_data)
 
         return cls(discord.FFmpegPCMAudio(meta_data['url'], **ffmpeg_options), meta_data=meta_data)
 

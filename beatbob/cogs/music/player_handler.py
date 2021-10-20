@@ -6,7 +6,7 @@ import asyncio
 from cogs.music.music_player import MusicPlayer
 
 
-class PlayerHandler(commands.Cog, name="Player handler"):
+class PlayerHandler(commands.Cog, name="Music Playing"):
     def __init__(self, bot) -> None:
         super().__init__()
         self.bot = bot
