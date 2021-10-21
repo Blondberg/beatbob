@@ -34,14 +34,30 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.url = meta_data.get('url')
         self.duration = meta_data.get('duration')
 
+    def time_converter(seconds):
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+
+        if(h > 0):
+            return("Duration: {}h {}m {}s".format(h, m, s))
+
+        if(m > 0):
+            return("Duration: {}m {}s".format(m, s))
+
+        return("Duration: {}s".format(s))
+
+
+
     @classmethod
     async def from_url(cls, url, *, loop=None):
 
         try:
             # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
-            meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{url}", download=False))
+            meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
         except CommandInvokeError:
-            print("The youtube search is not valid")
+            print("Youtube url invalid. Doing youtube search instead")
+            meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{url}", download=False))
+
         # # TODO This is redundant asnd for debug purposes only!
         # with open('output.json', 'w') as f:
         #     f.write(json.dumps(meta_data))

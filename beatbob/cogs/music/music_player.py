@@ -79,9 +79,9 @@ class MusicPlayer:
             return
 
         async with ctx.typing():
-            player = await YTDLSource.from_url(url, loop=self.bot.loop)
-
-            await self.queue.put(player)
+            players = await YTDLSource.from_url(url, loop=self.bot.loop)
+            for player in players:
+                await self.queue.put(player)
             await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
         return
 
