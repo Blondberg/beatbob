@@ -32,7 +32,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = meta_data.get('title')
          # a specific URL needed for discord to play the music
         self.url = meta_data.get('url')
-        self.duration = meta_data.get('duration')
+        self.duration = self.time_converter(meta_data.get('duration'))
 
     def time_converter(seconds):
         m, s = divmod(seconds, 60)
