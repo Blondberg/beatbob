@@ -2,6 +2,7 @@ import youtube_dl
 import discord
 import json
 from discord.ext.commands.errors import CommandInvokeError
+from apis import spotify_api
 
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -35,6 +36,11 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.duration = self.time_converter(meta_data.get('duration'))
 
     def time_converter(self, seconds):
+        """Format time in seconds to d, h, m, so
+
+        Args:
+            seconds (int): seconds
+        """
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
         d, h = divmod(h, 24)
@@ -51,16 +57,24 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return("Duration: {}s".format(s))
 
 
-
     @classmethod
     async def from_url(cls, url, *, loop=None):
-
         try:
             # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
             meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
-        except CommandInvokeError:
+        except:
             print("Youtube url invalid. Doing youtube search instead")
-            meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{url}", download=False))
+
+            search_term = url
+
+            if "spotify" in url:
+                spotify = spotify_api.SpotifyApi()
+                name, artists = spotify.extract_meta_data(url)
+                artist_name_list = [artist["name"] for artist in artists]
+                search_term = name + ' ' + ' '.join(artist_name_list)
+
+
+            meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{search_term}", download=False))
 
         # # TODO This is redundant asnd for debug purposes only!
         # with open('output.json', 'w') as f:

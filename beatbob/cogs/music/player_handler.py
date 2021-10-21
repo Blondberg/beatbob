@@ -45,7 +45,7 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
         try:
             return self.players[guild_id]
         except KeyError:
-            print("The guild ID '{0}' does not exist in the player list. Adding it...".format(guild_id))
+            print("The guild ID '{}' does not exist in the player list. Adding it...".format(guild_id))
             self.players[guild_id] = MusicPlayer(self.bot, guild_id)
             return self.players[guild_id]
 
