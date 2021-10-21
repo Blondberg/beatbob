@@ -37,6 +37,10 @@ class YTDLSource(discord.PCMVolumeTransformer):
     def time_converter(self, seconds):
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
+        d, h = divmod(h, 24)
+
+        if(d > 0):
+            return("Duration: {}d {}h {}m {}s".format(d, h, m, s))
 
         if(h > 0):
             return("Duration: {}h {}m {}s".format(h, m, s))
