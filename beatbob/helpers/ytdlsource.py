@@ -34,7 +34,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.url = meta_data.get('url')
         self.duration = self.time_converter(meta_data.get('duration'))
 
-    def time_converter(seconds):
+    def time_converter(self, seconds):
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
 
