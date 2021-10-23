@@ -116,10 +116,13 @@ class MusicPlayer:
 
 
     async def skip(self, ctx):
-        ctx.message.guild.voice_client.stop()
-        if self.queue.empty():
-            await ctx.send("There are no more songs in the queue!")
-
+        try:
+            ctx.message.guild.voice_client.stop()
+            if self.queue.empty():
+                await ctx.send("There are no more songs in the queue! Used -p to add more.")
+        except Exception as e:
+            print("Something went wrong skipping song.")
+            print(e)
 
     async def clear():
         return

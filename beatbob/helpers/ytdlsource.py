@@ -36,7 +36,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.duration = self.time_converter(meta_data.get('duration'))
 
     def time_converter(self, seconds):
-        """Format time in seconds to d, h, m, so
+        """Covert time in seconds to d, h, m, so
 
         Args:
             seconds (int): seconds

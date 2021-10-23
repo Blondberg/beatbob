@@ -23,14 +23,11 @@ class SpotifyApi():
 
 
 if __name__ == '__main__':
+    """This is just used for testing purposes
+    """
     spotify = SpotifyApi()
     name, artists=  spotify.extract_meta_data("https://open.spotify.com/track/2fWSwWmKRuyioqIzOzuQGo?si=512d42397ec44d89")
     for artist in artists:
         print(artist["name"])
-# results = sp.search(q='e7c2dbfabc554a7f', limit=20)
-# results = sp.artist("")
-# for idx, track in enumerate(results['tracks']['items']):
-#     print(idx, track['name'])
-
 
 
