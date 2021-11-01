@@ -17,6 +17,7 @@ class MusicPlayer:
         self.queue = asyncio.Queue()
 
 
+
     async def player_loop(self, ctx):
         await self.bot.wait_until_ready()
 
@@ -87,6 +88,14 @@ class MusicPlayer:
 
 
     async def join(self, ctx):
+        """Join a voice_client
+
+        Args:
+            ctx (ctx): commands.ctx
+
+        Returns:
+            voice_client: The voice_client connected to (if successful)
+        """
         if not ctx.author.voice:
             await ctx.send("You need to be in a joinable channel for me to join the party.")
             return

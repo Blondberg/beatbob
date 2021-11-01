@@ -25,7 +25,7 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
 
     @commands.command(name='leave', aliases=['l'], description='You no longer need Beatbob in your life')
     async def leave(self, ctx: commands.Context):
-        await self.get_guild(ctx.message.guild.id).join(ctx)
+        await self.get_guild(ctx.message.guild.id).leave(ctx)
 
 
     @commands.command(name='pause', description='Pause the current song.')
@@ -42,6 +42,14 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
         await self.get_guild(ctx.message.guild.id).skip(ctx)
 
     def get_guild(self, guild_id):
+        """Get guild from players list by searching for guild_id. Adds new id and player if guild doesn't exist.
+
+        Args:
+            guild_id (int): Id for the guild
+
+        Returns:
+            Player: A music player connected to the specific guild
+        """
         try:
             return self.players[guild_id]
         except KeyError:
