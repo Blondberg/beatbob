@@ -64,8 +64,8 @@ class MusicPlayer:
         voice_client = ctx.message.guild.voice_client
 
         if not voice_client or not voice_client.is_connected():
-            await ctx.send("I am not connected to a voice channel! Try -join.")
-            return
+            await ctx.send("I am not connected to a voice channel! INCOMING!")
+            voice_client = await self.join(ctx)
 
         if not url:
             await ctx.send("You need to give me an url so I know what to play...")
@@ -88,19 +88,27 @@ class MusicPlayer:
 
     async def join(self, ctx):
         if not ctx.author.voice:
-            await ctx.send("You are currently not in a joinable channel")
+            await ctx.send("You need to be in a joinable channel for me to join the party.")
             return
 
         try:
             channel = ctx.author.voice.channel
 
             await channel.connect()
-        except ClientException as e:
-            print("Can't join a channel when already connected to it")
-            return
 
+            voice_client = ctx.message.guild.voice_client
+        except ClientException:
+            print("Can't join a channel when already connected to it")
+            return False
+
+        return voice_client
 
     async def leave(self, ctx):
+        """Leave the current voice channel (if any)
+
+        Args:
+            ctx (ctx): Info about the message (channel etc.)
+        """
         try:
             voice_client = ctx.message.author.guild.voice_client
             if voice_client or not voice_client.is_connected() :
@@ -113,26 +121,15 @@ class MusicPlayer:
             print("Tried to leave channel when not connected")
 
         await ctx.send("I am not in a channel, so I can't leave.")
+        return
 
 
     async def skip(self, ctx):
         try:
             ctx.message.guild.voice_client.stop()
+            self.next.set()
             if self.queue.empty():
                 await ctx.send("There are no more songs in the queue! Used -p to add more.")
         except Exception as e:
             print("Something went wrong skipping song.")
             print(e)
-
-    async def clear():
-        return
-
-    async def queue():
-
-        return
-
-    async def loop():
-        return
-
-    async def shuffle():
-        return
