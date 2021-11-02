@@ -12,10 +12,8 @@ class MusicPlayer:
 
         self.loop_created = False
 
-        # used to tell the player loop when the next song can be loaded
-        self.next = asyncio.Event()
+        self.next = asyncio.Event() # used to tell the player loop when the next song can be loaded
         self.queue = asyncio.Queue()
-
 
 
     async def player_loop(self, ctx):
@@ -36,12 +34,16 @@ class MusicPlayer:
 
             # Wait for the previous song to finish
             await self.next.wait()
-            print("Finished playing song: {}".format(source.title))
 
         # TODO clear everything if the bot is closed
 
 
     async def pause(self, ctx):
+        """Pause the current song
+
+        Args:
+            ctx (commands.Context): Context which the command is invoked under
+        """
         voice_client = ctx.message.guild.voice_client
 
         if not voice_client or not voice_client.is_connected():
@@ -55,6 +57,11 @@ class MusicPlayer:
 
 
     async def resume(self, ctx):
+        """Resume the current song if player is paused, otherwise do nothing
+
+        Args:
+            ctx (commands.context): Context which the command is invoked under
+        """
         voice_client = ctx.message.guild.voice_client
         if voice_client.is_paused():
             voice_client.play()
@@ -62,14 +69,23 @@ class MusicPlayer:
 
 
     async def play(self, ctx, url):
+        """Either start playing if paused, or add a new song to the queue
+
+        Args:
+            ctx (commands.Context): Context which the command is invoked under the
+            url (string): Youtube/Spotify url for the chosen song (could also be a youtube search)
+        """
         voice_client = ctx.message.guild.voice_client
 
         if not voice_client or not voice_client.is_connected():
             await ctx.send("I am not connected to a voice channel! INCOMING!")
             voice_client = await self.join(ctx)
 
-        if not url:
-            await ctx.send("You need to give me an url so I know what to play...")
+        if voice_client.is_paused():
+            self.resume(ctx)
+        elif not url:
+            if self.queue.empty():
+                await ctx.send("You need to give me an url so I know what to play...")
             return
 
         if not self.loop_created:
@@ -87,11 +103,21 @@ class MusicPlayer:
         return
 
 
+    async def queue(self, ctx, url=''):
+        """Show the queue or queue a song if an url is added
+
+        Args:
+            ctx (commands.Context): Context which the command is invoked under
+            url (string): Youtube/Spotify url or Youtube search
+        """
+        pass
+
+
     async def join(self, ctx):
         """Join a voice_client
 
         Args:
-            ctx (ctx): commands.ctx
+            ctx (commands.Context): Context the comand is invoked under
 
         Returns:
             voice_client: The voice_client connected to (if successful)
@@ -112,11 +138,12 @@ class MusicPlayer:
 
         return voice_client
 
+
     async def leave(self, ctx):
         """Leave the current voice channel (if any)
 
         Args:
-            ctx (ctx): Info about the message (channel etc.)
+            ctx (commands.Context): Context the command is invoked under
         """
         try:
             voice_client = ctx.message.author.guild.voice_client
@@ -125,15 +152,19 @@ class MusicPlayer:
                 self.bot.loop.clear()
                 self.songlist.clear()
                 return
-        except AttributeError as e:
+        except Exception as e:
+            print("Something went wrong when trying to leave channel")
             print(e)
-            print("Tried to leave channel when not connected")
 
         await ctx.send("I am not in a channel, so I can't leave.")
-        return
 
 
     async def skip(self, ctx):
+        """Skip the currently playing song. Notify if the queue is empty.py
+
+        Args:
+            ctx (commands.Context): Context which the command is invoked under
+        """
         try:
             ctx.message.guild.voice_client.stop()
             self.next.set()
