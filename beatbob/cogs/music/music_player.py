@@ -4,8 +4,12 @@ from helpers.ytdlsource import YTDLSource
 from discord.errors import ClientException
 from helpers.songlist import SongList
 
+import logging
+
 class MusicPlayer:
     def __init__(self, bot, guild_id):
+
+        self.logger = loggin.getLogger('musicplayer')
         self.guild_id = guild_id
         self.shuffle = False
         self.loop = False

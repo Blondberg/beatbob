@@ -7,7 +7,6 @@ class SongList:
     """
     def __init__(self) -> None:
         self.current = None
-        self.songs = [] # all the songs that are added (until cleared)
         self.queue = asyncio.Queue() # all the songs that are currently in the player queue
 
         # flags
