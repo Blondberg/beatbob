@@ -29,7 +29,7 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
     @commands.command(name='leave', aliases=['l'], description='You no longer need Beatbob in your life')
     async def leave(self, ctx: commands.Context):
         await self.get_guild(ctx.message.guild.id).leave(ctx)
-        await self.remove_guild(ctx.message.guild.id)
+        self.remove_guild(ctx.message.guild.id)
 
 
     @commands.command(name='pause', description='Pause the current song.')

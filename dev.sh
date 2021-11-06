@@ -42,7 +42,7 @@ runpy() {
     PATH_TO_MAIN=$(find $PATH_TO_GIT -name "venv" -prune -name ".git" -prune -or -name "__main__.py")
     echo "Main file found!"
     echo "Running main file!"
-    python $PATH_TO_MAIN
+    python -u $PATH_TO_MAIN
 }
 
 "$@"

@@ -1,8 +1,8 @@
 import youtube_dl
 import discord
 import json
-from discord.ext.commands.errors import CommandInvokeError
 from apis import spotify_api
+from discord.ext.commands.errors import CommandInvokeError
 
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -18,7 +18,6 @@ ydl_opts = {
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 ytdl = youtube_dl.YoutubeDL(ydl_opts)
-
 
 ffmpeg_options = {
     'options': '-vn'

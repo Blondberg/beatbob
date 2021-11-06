@@ -2,6 +2,7 @@ import asyncio
 import discord
 from helpers.ytdlsource import YTDLSource
 from discord.errors import ClientException
+from helpers.songlist import SongList
 
 class MusicPlayer:
     def __init__(self, bot, guild_id):
@@ -13,7 +14,8 @@ class MusicPlayer:
         self.loop_created = False
 
         self.next = asyncio.Event() # used to tell the player loop when the next song can be loaded
-        self.queue = asyncio.Queue()
+
+        self.songlist = SongList()
 
 
     async def player_loop(self, ctx):
@@ -27,7 +29,7 @@ class MusicPlayer:
             self.next.clear()
 
             # remove and return an item from the queue. Wait for available item if empty
-            source = await self.queue.get()
+            source = await self.songlist.get_next()
 
             # play a song and set Event flag to true when done
             voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
@@ -84,7 +86,7 @@ class MusicPlayer:
         if voice_client.is_paused():
             self.resume(ctx)
         elif not url:
-            if self.queue.empty():
+            if self.songlist.get_queue().empty():
                 await ctx.send("You need to give me an url so I know what to play...")
             return
 
@@ -95,10 +97,11 @@ class MusicPlayer:
             self.resume(ctx)
             return
 
+
         async with ctx.typing():
             player = await YTDLSource.from_url(url, loop=self.bot.loop)
 
-            await self.queue.put(player)
+            await self.songlist.add_song(player)
             await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
         return
 
@@ -110,7 +113,9 @@ class MusicPlayer:
             ctx (commands.Context): Context which the command is invoked under
             url (string): Youtube/Spotify url or Youtube search
         """
-        pass
+        queue_embed = self.songlist.get_queue_embed()
+        async with ctx.typing():
+            await ctx.send("Current queue: \n{}".format(queue_embed))
 
 
     async def join(self, ctx):
@@ -168,7 +173,7 @@ class MusicPlayer:
         try:
             ctx.message.guild.voice_client.stop()
             self.next.set()
-            if self.queue.empty():
+            if self.songlist.get_queue().empty():
                 await ctx.send("There are no more songs in the queue! Used -p to add more.")
         except Exception as e:
             print("Something went wrong skipping song.")
