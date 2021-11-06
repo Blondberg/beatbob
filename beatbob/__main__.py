@@ -19,7 +19,8 @@ logger.addHandler(handler)
 
 # Setup music player logger
 logger = logging.getLogger('musicplayer')
-handler = logging.fileHandler(file='musicplayer.log', encoding='utf-8', mode='w')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='musicplayer.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
@@ -32,7 +33,6 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or(BOT_PREFIX))
 
 cogs.music.player_handler.setup(bot)
 cogs.misc.setup(bot)
-
 
 
 @bot.event

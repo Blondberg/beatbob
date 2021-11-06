@@ -1,10 +1,9 @@
 import youtube_dl
 import discord
-import json
 from apis import spotify_api
-from discord.ext.commands.errors import CommandInvokeError
+import asyncio
 
-ydl_opts = {
+YTDL_OPTIONS = {
     'format': 'bestaudio/best',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
@@ -17,9 +16,10 @@ ydl_opts = {
     'default_search': 'auto',
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
-ytdl = youtube_dl.YoutubeDL(ydl_opts)
+ytdl = youtube_dl.YoutubeDL(YTDL_OPTIONS)
 
-ffmpeg_options = {
+FFMPEG_OPTIONS = {
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn'
 }
 
@@ -57,7 +57,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
 
     @classmethod
-    async def from_url(cls, url, *, loop=None):
+    async def from_url(cls, url, *, loop: asyncio.BaseEventLoop = None):
+        loop = loop or asyncio.get_event_loop()
         try:
             # await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False)) # use the default exectutor (exectute calls asynchronously)
             meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
@@ -72,7 +73,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
                 artist_name_list = [artist["name"] for artist in artists]
                 search_term = name + ' ' + ' '.join(artist_name_list)
 
-
             meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{search_term}", download=False))
 
         # # TODO This is redundant asnd for debug purposes only!
@@ -84,5 +84,5 @@ class YTDLSource(discord.PCMVolumeTransformer):
             # take first item from a playlist
             meta_data = meta_data['entries'][0]
 
-        return cls(discord.FFmpegPCMAudio(meta_data['url'], **ffmpeg_options), meta_data=meta_data)
+        return cls(discord.FFmpegPCMAudio(meta_data['url'], **FFMPEG_OPTIONS), meta_data=meta_data)
 

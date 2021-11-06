@@ -7,6 +7,7 @@ class SongList:
     """
     def __init__(self) -> None:
         self.current = None
+        self.songs = [] # all the songs that are added (until cleared)
         self.queue = asyncio.Queue() # all the songs that are currently in the player queue
 
         # flags
@@ -50,7 +51,6 @@ class SongList:
 
     async def get_next(self):
         self.current = await self.queue.get()
-        self.songnumber = self.songnumber + 1
         return self.current
 
     def get_queue_embed(self):
