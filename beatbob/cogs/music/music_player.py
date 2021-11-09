@@ -42,16 +42,15 @@ class MusicPlayer:
         while True:
             self.next.clear()
 
-            self.songlist.get_next()
+            self.current = self.songlist.get_next()
 
-            # remove and return an item from the queue. Wait for available item if empty
-            try:
-                async with timeout(180):  # 3 minutes
-                    self.current = await self.songlist.get_next()
-                    print("This is the source: ", self.current)
-            except asyncio.TimeoutError:
-                self.bot.loop.create_task(self.stop())
-                return
+            # try:
+            #     async with timeout(180):
+            #         self.current = await self.songlist.get_next()
+            #         print("This is the source: ", self.current)
+            # except:
+            #     self.bot.loop.create_task(self.stop())
+
 
             # play a song and set Event flag to true when done
             try:
