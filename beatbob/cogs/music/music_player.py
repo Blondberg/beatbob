@@ -34,7 +34,6 @@ class MusicPlayer:
     async def player_loop_task(self):
         await self.bot.wait_until_ready()
 
-
         self.loop_created = True
 
         print("I am here")
@@ -42,18 +41,11 @@ class MusicPlayer:
         while True:
             self.next.clear()
 
-            self.current = self.songlist.get_next()
-
-            # try:
-            #     async with timeout(180):
-            #         self.current = await self.songlist.get_next()
-            #         print("This is the source: ", self.current)
-            # except:
-            #     self.bot.loop.create_task(self.stop())
-
+            self.current = await self.songlist.get_next()
 
             # play a song and set Event flag to true when done
             try:
+                self.logger.debug('Trying to play a song')
                 self.voice_client.play(self.current, after=lambda _: self.bot.loop.call_soon_threadsafe(self.play_next_song))
             except:
                 print("Something went wrong when playing song")
@@ -61,11 +53,15 @@ class MusicPlayer:
             await self.next.wait()
 
 
+
     def play_next_song(self, error=None):
         if error:
             self.logger.error('There was an error in play_next_song().')
         self.next.set()
 
+
+    def stop(self):
+        pass
 
 
     async def pause(self, ctx):
