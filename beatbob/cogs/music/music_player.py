@@ -2,137 +2,152 @@ import asyncio
 import discord
 from helpers.ytdlsource import YTDLSource
 from discord.errors import ClientException
+from helpers.songlist import SongList
+from async_timeout import timeout
+
+import logging
 
 class MusicPlayer:
-    def __init__(self, bot, guild_id):
+    def __init__(self, bot, guild_id, ctx):
+
+        self.logger = logging.getLogger('musicplayer')
         self.guild_id = guild_id
         self.shuffle = False
         self.loop = False
         self.bot = bot
 
-        self.loop_created = False
+        self.ctx = ctx
 
-        # used to tell the player loop when the next song can be loaded
-        self.next = asyncio.Event()
-        self.queue = asyncio.Queue()
+        self.next = asyncio.Event() # used to tell the player loop when the next song can be loaded
+
+        self.songlist = SongList()
+
+        self.player_loop = self.bot.loop.create_task(self.player_loop_task())
+
+        self.voice_client = None
+
+        self.current_song = None
 
 
-    async def player_loop(self, ctx):
+
+    async def player_loop_task(self):
         await self.bot.wait_until_ready()
 
-        voice_client = ctx.guild.voice_client
-
-        self.loop_created = True
-
-        while not self.bot.is_closed():
+        while True:
             self.next.clear()
 
-            # remove and return an item from the queue. Wait for available item if empty
-            source = await self.queue.get()
+            self.current_song = await self.songlist.get_next()
 
             # play a song and set Event flag to true when done
-            voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
-
+            try:
+                self.logger.debug('Trying to play a song')
+                self.voice_client.play(self.current_song, after=lambda _: self.bot.loop.call_soon_threadsafe(self.play_next_song))
+            except:
+                print("Something went wrong when playing song")
             # Wait for the previous song to finish
             await self.next.wait()
-            print("Finished playing song: {}".format(source.title))
 
-        # TODO clear everything if the bot is closed
+
+
+    def play_next_song(self, error=None):
+        if error:
+            self.logger.error('There was an error in play_next_song().')
+        self.next.set()
+
+
+    def stop(self):
+        pass
 
 
     async def pause(self, ctx):
-        voice_client = ctx.message.guild.voice_client
+        """Pause the current song
 
-        if not voice_client or not voice_client.is_connected():
+        Args:
+            ctx (commands.Context): Context which the command is invoked under
+        """
+
+        if not self.voice_client or not self.voice_client.is_connected():
             await ctx.send("I am not connected to a channel...")
             return
-        if voice_client.is_playing():
-            voice_client.pause()
+        if self.voice_client.is_playing():
+            self.voice_client.pause()
 
         else:
             await ctx.send("Can't pause music if I'm not playing")
 
 
     async def resume(self, ctx):
-        voice_client = ctx.message.guild.voice_client
-        if voice_client.is_paused():
-            voice_client.play()
-        return
+        """Resume the current song if player is paused, otherwise do nothing
+
+        Args:
+            ctx (commands.context): Context which the command is invoked under
+        """
+        if self.voice_client and self.voice_client.is_paused():
+            self.voice_client.resume()
+
 
 
     async def play(self, ctx, url):
-        voice_client = ctx.message.guild.voice_client
+        """Either start playing if paused, or add a new song to the queue
 
-        if not voice_client or not voice_client.is_connected():
-            await ctx.send("I am not connected to a voice channel! Try -join.")
-            return
+        Args:
+            ctx (commands.Context): Context which the command is invoked under the
+            url (string): Youtube/Spotify url for the chosen song (could also be a youtube search)
+        """
+        self.voice_client = ctx.message.guild.voice_client
 
-        if not url:
-            await ctx.send("You need to give me an url so I know what to play...")
-            return
+        if not self.voice_client or not self.voice_client.is_connected():
+            await ctx.send("I am not connected to a voice channel! INCOMING!")
+            await self.join(ctx)
 
-        if not self.loop_created:
-            self.bot.loop.create_task(self.player_loop(ctx))
 
-        if voice_client.is_paused():
-            self.resume(ctx)
-            return
+        if self.voice_client and self.voice_client.is_paused():
+            self.voice_client.resume()
 
         async with ctx.typing():
-            player = await YTDLSource.from_url(url, loop=self.bot.loop)
-
-            await self.queue.put(player)
-            await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
-        return
+            try:
+                player = await YTDLSource.from_url(url, loop=self.bot.loop)
+            except:
+                print("An error occured getting source")
+            else:
+                await self.songlist.add_song(player)
+                await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
 
 
     async def join(self, ctx):
+        """Join a voice_client
+
+        Args:
+            ctx (commands.Context): Context the comand is invoked under
+
+        Returns:
+            voice_client: The voice_client connected to (if successful)
+        """
         if not ctx.author.voice:
-            await ctx.send("You are currently not in a joinable channel")
+            await ctx.send("You are not in a joinable channel!")
             return
 
         try:
             channel = ctx.author.voice.channel
-
             await channel.connect()
-        except ClientException as e:
+            self.logger.debug('Joined channel: {}'.format(channel.name))
+            self.voice_client = ctx.message.guild.voice_client
+
+        except ClientException:
             print("Can't join a channel when already connected to it")
-            return
-
-
-    async def leave(self, ctx):
-        try:
-            voice_client = ctx.message.author.guild.voice_client
-            if voice_client or not voice_client.is_connected() :
-                await ctx.voice_client.disconnect()
-                self.bot.loop.clear()
-                self.songlist.clear()
-                return
-        except AttributeError as e:
-            print(e)
-            print("Tried to leave channel when not connected")
-
-        await ctx.send("I am not in a channel, so I can't leave.")
+            return False
 
 
     async def skip(self, ctx):
+        """Skip the currently playing song. Notify if the queue is empty.py
+        """
+
         try:
-            ctx.message.guild.voice_client.stop()
-            if self.queue.empty():
-                await ctx.send("There are no more songs in the queue! Used -p to add more.")
-        except Exception as e:
-            print("Something went wrong skipping song.")
-            print(e)
+            self.logger.info('Trying to skip a song.')
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
 
-    async def clear():
-        return
-
-    async def queue():
-
-        return
-
-    async def loop():
-        return
-
-    async def shuffle():
-        return
+        except:
+            self.logger.error('Couldn\'t skip the song.')
+        else:
+            self.logger.info('Skipped song.')
