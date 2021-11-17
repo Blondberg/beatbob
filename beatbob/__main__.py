@@ -51,17 +51,17 @@ async def on_ready():
     logger.info("The bot is ready!")
 
 
-@bot.event
-async def on_message(message):
-    """This is just used for logging purposes
+# @bot.event
+# async def on_message(message):
+#     """This is just used for logging purposes
 
-    Args:
-        message (ctx): meta data for a sent message aimed towards the bot
-    """
+#     Args:
+#         message (ctx): meta data for a sent message aimed towards the bot
+#     """
 
-    now = datetime.now()
-    print("{} [{}]: {}".format(message.author, now.strftime("%d/%m/%y %H:%M:%S"), message.content))
-    await bot.process_commands(message)
+#     now = datetime.now()
+#     print("{} [{}]: {}".format(message.author, now.strftime("%d/%m/%y %H:%M:%S"), message.content))
+#     await bot.process_commands(message)
 
 
 bot.run(DISCORD_TOKEN, reconnect=True)
