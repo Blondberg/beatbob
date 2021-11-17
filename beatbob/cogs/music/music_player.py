@@ -18,8 +18,6 @@ class MusicPlayer:
 
         self.ctx = ctx
 
-        self.loop_created = False
-
         self.next = asyncio.Event() # used to tell the player loop when the next song can be loaded
 
         self.songlist = SongList()
@@ -28,25 +26,22 @@ class MusicPlayer:
 
         self.voice_client = None
 
-        self.current = None
+        self.current_song = None
+
 
 
     async def player_loop_task(self):
         await self.bot.wait_until_ready()
 
-        self.loop_created = True
-
-        print("I am here")
-
         while True:
             self.next.clear()
 
-            self.current = await self.songlist.get_next()
+            self.current_song = await self.songlist.get_next()
 
             # play a song and set Event flag to true when done
             try:
                 self.logger.debug('Trying to play a song')
-                self.voice_client.play(self.current, after=lambda _: self.bot.loop.call_soon_threadsafe(self.play_next_song))
+                self.voice_client.play(self.current_song, after=lambda _: self.bot.loop.call_soon_threadsafe(self.play_next_song))
             except:
                 print("Something went wrong when playing song")
             # Wait for the previous song to finish
@@ -88,8 +83,8 @@ class MusicPlayer:
             ctx (commands.context): Context which the command is invoked under
         """
         if self.voice_client and self.voice_client.is_paused():
-            self.voice_client.play()
-        return
+            self.voice_client.resume()
+
 
 
     async def play(self, ctx, url):
@@ -105,6 +100,9 @@ class MusicPlayer:
             await ctx.send("I am not connected to a voice channel! INCOMING!")
             await self.join(ctx)
 
+
+        if self.voice_client and self.voice_client.is_paused():
+            self.voice_client.resume()
 
         async with ctx.typing():
             try:
@@ -138,7 +136,6 @@ class MusicPlayer:
         except ClientException:
             print("Can't join a channel when already connected to it")
             return False
-
 
 
     async def skip(self, ctx):

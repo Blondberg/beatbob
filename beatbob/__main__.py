@@ -20,6 +20,8 @@ logger.addHandler(handler)
 # Setup music player logger
 logger = logging.getLogger('musicplayer')
 logger.setLevel(logging.DEBUG)
+
+
 handler = logging.FileHandler(filename='musicplayer.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
@@ -30,14 +32,23 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 BOT_PREFIX = os.getenv("BOT_PREFIX")
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(BOT_PREFIX))
+game = discord.Game("none of your business")
 
 cogs.music.player_handler.setup(bot)
 cogs.misc.setup(bot)
+
+@bot.event
+async def on_command(ctx):
+    logger = logging.getLogger('musicplayer')
+    logger.info("COMMAND: {} > {} > {}".format(ctx.guild.name, ctx.author, ctx.command))
 
 
 @bot.event
 async def on_ready():
     print("I am ready!")
+    await bot.change_presence(status=discord.Status.idle, activity=game)
+    logger = logging.getLogger('musicplayer')
+    logger.info("The bot is ready!")
 
 
 @bot.event
