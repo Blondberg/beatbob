@@ -3,7 +3,6 @@ import discord
 from helpers.ytdlsource import YTDLSource
 from discord.errors import ClientException
 from helpers.songlist import SongList
-from async_timeout import timeout
 
 import logging
 
@@ -28,6 +27,7 @@ class MusicPlayer:
 
         self.current_song = None
 
+        self.goodbye = discord.FFmpegPCMAudio("beatbob\cogs\music\goodbye.mp3")
 
 
     async def player_loop_task(self):
@@ -48,15 +48,14 @@ class MusicPlayer:
             await self.next.wait()
 
 
-
     def play_next_song(self, error=None):
         if error:
             self.logger.error('There was an error in play_next_song().')
         self.next.set()
 
 
-    def stop(self):
-        pass
+    async def stop(self, ctx):
+        await ctx.invoke.pause(ctx)
 
 
     async def pause(self, ctx):
@@ -104,14 +103,15 @@ class MusicPlayer:
         if self.voice_client and self.voice_client.is_paused():
             self.voice_client.resume()
 
-        async with ctx.typing():
-            try:
-                player = await YTDLSource.from_url(url, loop=self.bot.loop)
-            except:
-                print("An error occured getting source")
-            else:
-                await self.songlist.add_song(player)
-                await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
+        if url:
+            async with ctx.typing():
+                try:
+                    player = await YTDLSource.from_url(url, loop=self.bot.loop)
+                except:
+                    self.logger.error("Something went wrong fetching player")
+                else:
+                    await self.songlist.add_song(player)
+                    await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
 
 
     async def join(self, ctx):
@@ -151,3 +151,10 @@ class MusicPlayer:
             self.logger.error('Couldn\'t skip the song.')
         else:
             self.logger.info('Skipped song.')
+
+
+    async def leave(self, ctx):
+        self.voice_client.play(self.goodbye)
+        while self.voice_client.is_playing():
+            pass
+        await self.voice_client.disconnect()

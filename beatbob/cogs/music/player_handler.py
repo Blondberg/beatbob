@@ -2,6 +2,7 @@ from discord.ext import commands
 from discord.ext.commands.errors import MissingPermissions
 from cogs.music.music_player import MusicPlayer
 import logging
+import discord
 
 
 class PlayerHandler(commands.Cog, name="Music Playing"):
@@ -13,8 +14,20 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
 
     @commands.has_permissions(administrator=True)
     @commands.command(name='log', description='Show the bots log')
-    async def log(self, ctx: commands.Context):
-        await ctx.send("The bot log will be displayed here")
+    async def log(self, ctx: commands.Context, *, level=''):
+        with open('musicplayer.log') as f:
+            content = f.read().splitlines()
+
+        level = level.upper()
+
+        embed = discord.Embed(title="Beatbob log", color=0xff0000)
+
+        for line in content:
+            log_level, log_message = line.split(':', 1)
+            if (level and level == log_level) or (not level):
+                embed.add_field(name=log_level, value=log_message + '\n', inline=False)
+
+        await ctx.send(embed=embed)
 
     @log.error
     async def log_error(self, ctx, error):
@@ -45,6 +58,10 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
     async def skip(self, ctx: commands.Context):
         await self.get_guild(ctx.message.guild.id, ctx).skip(ctx)
 
+    @commands.command(name='leave', description='Make beatbob leave')
+    async def leave(self, ctx: commands.Context):
+        await self.get_guild(ctx.message.guild.id, ctx).leave(ctx)
+
     def get_guild(self, guild_id, ctx):
         """Get guild from players list by searching for guild_id. Adds new id and player if guild doesn't exist.
 
@@ -57,7 +74,7 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
         try:
             return self.players[guild_id]
         except KeyError:
-            print("The guild ID '{}' does not exist in the player list. Adding it...".format(guild_id))
+            self.logger.info("Guild ID '{}' does not exist in the player list. Adding it".format(guild_id))
             self.players[guild_id] = MusicPlayer(self.bot, guild_id, ctx)
             return self.players[guild_id]
 

@@ -47,7 +47,6 @@ class SongList:
 
     def clear(self):
         self.songs.clear()
-        self.song_queue.clear()
 
     async def get_next(self):
         self.current = await self.queue.get()
