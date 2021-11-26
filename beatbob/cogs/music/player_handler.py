@@ -32,7 +32,7 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
     @log.error
     async def log_error(self, ctx, error):
         if isinstance(error, MissingPermissions):
-            self.logger.error("{} does not have permission to use command {}".format(ctx.author, ctx.command))
+            self.logger.error(f"{ctx.author} does not have permission to use command {ctx.command}")
 
     @commands.command(name="play", aliases=['p'], description="Plays the song from url or adds it to the queue")
     async def play(self, ctx: commands.Context, *, url=''):
@@ -74,7 +74,7 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
         try:
             return self.players[guild_id]
         except KeyError:
-            self.logger.info("Guild ID '{}' does not exist in the player list. Adding it".format(guild_id))
+            self.logger.info(f"Guild ID '{guild_id}' does not exist in the player list. Adding it")
             self.players[guild_id] = MusicPlayer(self.bot, guild_id, ctx)
             return self.players[guild_id]
 
@@ -86,9 +86,8 @@ class PlayerHandler(commands.Cog, name="Music Playing"):
         """
         try:
             del self.players[guild_id]
-        except Exception as e:
-            print("Something went wrong guild id from player list")
-            print(e)
+        except KeyError as e:
+            self.logger.error(e)
 
 
 def setup(bot: commands.Bot):

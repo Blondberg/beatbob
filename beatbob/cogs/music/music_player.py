@@ -1,8 +1,8 @@
 import asyncio
 import discord
-from helpers.ytdlsource import YTDLSource
+from cogs.music.ytdlsource import YTDLSource
 from discord.errors import ClientException
-from helpers.songlist import SongList
+from cogs.music.songlist import SongList
 
 import logging
 
@@ -100,8 +100,7 @@ class MusicPlayer:
             await self.join(ctx)
 
 
-        if self.voice_client and self.voice_client.is_paused():
-            self.voice_client.resume()
+        # await ctx.invoke.resume(ctx)
 
         if url:
             async with ctx.typing():
@@ -111,7 +110,7 @@ class MusicPlayer:
                     self.logger.error("Something went wrong fetching player")
                 else:
                     await self.songlist.add_song(player)
-                    await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
+                    await ctx.send(f"Queued song: {player.title} - [{player.duration}]")
 
 
     async def join(self, ctx):
@@ -130,11 +129,11 @@ class MusicPlayer:
         try:
             channel = ctx.author.voice.channel
             await channel.connect()
-            self.logger.debug('Joined channel: {}'.format(channel.name))
+            self.logger.debug(f'Joined channel: {channel.name}')
             self.voice_client = ctx.message.guild.voice_client
 
         except ClientException:
-            print("Can't join a channel when already connected to it")
+            self.logger.info("Tryed connecting to channel already connected to")
             return False
 
 
