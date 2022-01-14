@@ -1,6 +1,6 @@
 import youtube_dl
 import discord
-import spotify_api
+from . import spotify_api
 import asyncio
 import json
 
