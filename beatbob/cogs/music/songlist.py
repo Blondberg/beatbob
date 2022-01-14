@@ -1,6 +1,7 @@
 import collections
 import random
 import asyncio
+import logging
 
 class SongList:
     """Class that contains the song queue and different ways of manipulating it
@@ -15,6 +16,9 @@ class SongList:
         self.shuffle = False
 
         self.songnumber = -1
+
+        self.logger = logging.getLogger('musicplayer')
+
 
     def get_song_size(self):
         return len(self.songs)
@@ -43,7 +47,8 @@ class SongList:
     async def add_song(self, player):
         self.songs.append(player)
         await self.queue.put(player)
-        print("Added song {} to queue".format(player.title))
+
+        self.logger.debug("Added song {} to queue".format(player.title))
 
     def clear(self):
         self.songs.clear()

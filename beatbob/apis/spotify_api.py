@@ -16,9 +16,10 @@ class SpotifyApi():
         """Extracts meta data from spotify
 
         Returns:
-            [type]: [description]
+            [type]: track name, artists, duration (in seconds)
         """
-        return self.sp.track(url)["name"], self.sp.track(url)["artists"]
+        track = self.sp.track(url)
+        return track['name'], track['artists'], track['duration_ms'] / 1000
 
 
 
@@ -26,7 +27,8 @@ if __name__ == '__main__':
     """This is just used for testing purposes
     """
     spotify = SpotifyApi()
-    name, artists=  spotify.extract_meta_data("https://open.spotify.com/track/2fWSwWmKRuyioqIzOzuQGo?si=512d42397ec44d89")
+    name, artists, duration=  spotify.extract_meta_data("https://open.spotify.com/track/2fWSwWmKRuyioqIzOzuQGo?si=512d42397ec44d89")
+    print(name)
     for artist in artists:
         print(artist["name"])
 
