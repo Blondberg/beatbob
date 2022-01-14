@@ -1,9 +1,7 @@
 import discord
 import os
 from discord.ext import commands
-from discord.gateway import EventListener
 from dotenv import load_dotenv
-from apis.spotify_api import SpotifyApi
 import cogs.music.player_handler
 import cogs.misc
 from datetime import datetime
@@ -43,10 +41,11 @@ async def on_command(ctx):
     logger.info("COMMAND: {} > {} > {}".format(ctx.guild.name, ctx.author, ctx.command))
 
 
+
 @bot.event
 async def on_ready():
     print("I am ready!")
-    await bot.change_presence(status=discord.Status.idle, activity=game)
+    await bot.change_presence(status=discord.Status.online, activity=game)
     logger = logging.getLogger('musicplayer')
     logger.info("The bot is ready!")
 

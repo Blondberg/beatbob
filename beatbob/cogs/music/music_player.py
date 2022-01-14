@@ -1,8 +1,8 @@
 import asyncio
 import discord
-from helpers.ytdlsource import YTDLSource
+from apis.ytdlsource import YTDLSource
 from discord.errors import ClientException
-from helpers.songlist import SongList
+from .songlist import SongList
 from async_timeout import timeout
 
 import logging
@@ -106,13 +106,16 @@ class MusicPlayer:
 
         async with ctx.typing():
             try:
-                player = await YTDLSource.from_url(url, loop=self.bot.loop)
-            except:
+                players = await YTDLSource.from_url(url, loop=self.bot.loop)
+            except Exception as e:
+                print(e)
                 print("An error occured getting source")
             else:
-                await self.songlist.add_song(player)
-                await ctx.send("Queued song: {} - [{}]".format(player.title, player.duration))
+                await self.songlist.append_songs(players)
+                await ctx.send(f"Queued {len(players)} songs!")
 
+    async def queue(self, ctx, url=''):
+        await ctx.send('Displaying queue!')
 
     async def join(self, ctx):
         """Join a voice_client
