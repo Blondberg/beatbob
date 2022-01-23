@@ -111,7 +111,8 @@ class MusicPlayer:
                 print(e)
                 print("An error occured getting source")
             else:
-                await self.songlist.append_songs(players)
+                for player in players:
+                    await self.songlist.add_song(player)
                 await ctx.send(f"Queued {len(players)} songs!")
 
     async def queue(self, ctx, url=''):
