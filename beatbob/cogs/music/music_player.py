@@ -107,8 +107,7 @@ class MusicPlayer:
             try:
                 player = await YTDLSource.from_url(url, loop=self.bot.loop)
             except Exception as e:
-                print(e)
-                print("An error occured getting source")
+                self.logger.exception('An error occured while getting source')
             else:
                 await self.songlist.add_song(player)
                 await ctx.send(f"Queued a song!")

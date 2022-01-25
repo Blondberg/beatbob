@@ -2,6 +2,7 @@ import youtube_dl
 import discord
 from apis import spotify_api
 import asyncio
+import re
 
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
@@ -44,16 +45,16 @@ class YTDLSource(discord.PCMVolumeTransformer):
         h, m = divmod(m, 60)
         d, h = divmod(h, 24)
 
-        if(d > 0):
-            return("Duration: {}d {}h {}m {}s".format(d, h, m, s))
+        if d > 0:
+            return "Duration: {}d {}h {}m {}s".format(d, h, m, s)
 
-        if(h > 0):
-            return("Duration: {}h {}m {}s".format(h, m, s))
+        if h > 0:
+            return "Duration: {}h {}m {}s".format(h, m, s) 
 
-        if(m > 0):
-            return("Duration: {}m {}s".format(m, s))
+        if m > 0:
+            return "Duration: {}m {}s".format(m, s)
 
-        return("Duration: {}s".format(s))
+        return "Duration: {}s".format(s)
 
 
     @classmethod
@@ -67,9 +68,10 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
             search_term = url
 
-            if "spotify" in url:
+
+            if re.match(r'^(?:spotify:|https:\/\/open\.spotify\.com\/(track\/|user\/(.*)\/playlist\/))(.*)$', search_term):
                 spotify = spotify_api.SpotifyApi()
-                name, artists = spotify.extract_meta_data(url)
+                name, artists, duration = spotify.extract_meta_data(url)
                 artist_name_list = [artist["name"] for artist in artists]
                 search_term = name + ' ' + ' '.join(artist_name_list)
 
