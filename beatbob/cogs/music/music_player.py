@@ -105,13 +105,13 @@ class MusicPlayer:
 
         async with ctx.typing():
             try:
-                players = await YTDLSource.from_url(url, loop=self.bot.loop)
+                player = await YTDLSource.from_url(url, loop=self.bot.loop)
             except Exception as e:
                 print(e)
                 print("An error occured getting source")
             else:
-                await self.songlist.append_songs(players)
-                await ctx.send(f"Queued {len(players)} songs!")
+                await self.songlist.add_song(player)
+                await ctx.send(f"Queued a song!")
 
     async def queue(self, ctx, url=''):
         await ctx.send('Displaying queue!')
