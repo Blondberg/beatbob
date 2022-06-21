@@ -1,10 +1,10 @@
+from datetime import datetime
 import discord
 import os
 from discord.ext import commands
 from dotenv import load_dotenv
 import cogs.music.player_handler
 import cogs.misc
-from datetime import datetime
 
 import logging
 
@@ -44,6 +44,8 @@ async def on_command(ctx):
 
 @bot.event
 async def on_ready():
+    """When bot is fully loaded
+    """
     print("I am ready!")
     await bot.change_presence(status=discord.Status.online, activity=game)
     logger = logging.getLogger('musicplayer')

@@ -1,6 +1,6 @@
 import asyncio
 import discord
-from apis.ytdlsource import YTDLSource
+from cogs.music.ytdlsource import YTDLSource
 from discord.errors import ClientException
 from .songlist import SongList
 from async_timeout import timeout
@@ -28,7 +28,7 @@ class MusicPlayer:
 
         self.current_song = None
 
-        self.goodbye = discord.FFmpegPCMAudio("beatbob\cogs\music\goodbye.mp3")
+        self.goodbye = discord.FFmpegPCMAudio("beatbob/cogs/music/goodbye.mp3")
 
 
     async def player_loop_task(self):
@@ -43,7 +43,7 @@ class MusicPlayer:
             try:
                 self.logger.debug('Trying to play a song')
                 self.voice_client.play(self.current_song, after=lambda _: self.bot.loop.call_soon_threadsafe(self.play_next_song))
-            except:
+            except Exception:
                 print("Something went wrong when playing song")
             # Wait for the previous song to finish
             await self.next.wait()
@@ -110,7 +110,7 @@ class MusicPlayer:
                 self.logger.exception('An error occured while getting source')
             else:
                 await self.songlist.add_song(player)
-                await ctx.send(f"Queued a song!")
+                await ctx.send(f"Queued: {player.title} [{player.duration}")
 
     async def queue(self, ctx, url=''):
         await ctx.send('Displaying queue!')
@@ -131,7 +131,7 @@ class MusicPlayer:
         try:
             channel = ctx.author.voice.channel
             await channel.connect()
-            self.logger.debug(f'Joined channel: {channel.name}')
+            self.logger.debug('Joined channel: %s', channel.name)
             self.voice_client = ctx.message.guild.voice_client
 
         except ClientException:
@@ -148,7 +148,7 @@ class MusicPlayer:
             if self.voice_client.is_playing():
                 self.voice_client.stop()
 
-        except:
+        except Exception as e:
             self.logger.error('Couldn\'t skip the song.')
         else:
             self.logger.info('Skipped song.')

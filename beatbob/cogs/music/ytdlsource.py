@@ -1,6 +1,6 @@
 import youtube_dl
 import discord
-from apis import spotify_api
+from cogs.music import spotify_api
 import asyncio
 import re
 
@@ -46,15 +46,15 @@ class YTDLSource(discord.PCMVolumeTransformer):
         d, h = divmod(h, 24)
 
         if d > 0:
-            return "Duration: {}d {}h {}m {}s".format(d, h, m, s)
+            return f'Duration: {d}d {h}h {m}m {d}s'
 
         if h > 0:
-            return "Duration: {}h {}m {}s".format(h, m, s) 
+            return f'Duration: {h}h {m}m {s}s'
 
         if m > 0:
-            return "Duration: {}m {}s".format(m, s)
+            return f'Duration: {m}m {s}s'
 
-        return "Duration: {}s".format(s)
+        return f'Duration: {s}s'
 
 
     @classmethod
@@ -68,7 +68,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
             search_term = url
 
-
             if re.match(r'^(?:spotify:|https:\/\/open\.spotify\.com\/(track\/|user\/(.*)\/playlist\/))(.*)$', search_term):
                 spotify = spotify_api.SpotifyApi()
                 name, artists, duration = spotify.extract_meta_data(url)
@@ -77,7 +76,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
             meta_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(f"ytsearch:{search_term}", download=False))
 
-        # # TODO This is redundant asnd for debug purposes only!
+        # TODO This is redundant asnd for debug purposes only!
         # with open('output.json', 'w') as f:
         #     f.write(json.dumps(meta_data))
 

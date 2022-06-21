@@ -27,7 +27,7 @@ if __name__ == '__main__':
     """This is just used for testing purposes
     """
     spotify = SpotifyApi()
-    name, artists, duration=  spotify.extract_meta_data("https://open.spotify.com/track/2fWSwWmKRuyioqIzOzuQGo?si=512d42397ec44d89")
+    name, artists, duration = spotify.extract_meta_data("https://open.spotify.com/track/2fWSwWmKRuyioqIzOzuQGo?si=512d42397ec44d89")
     print(name)
     for artist in artists:
         print(artist["name"])
